@@ -26,44 +26,48 @@ const Placeholder = ({ name }: { name: string }) => (
 )
 
 export default function App() {
+  console.log("APP ROUTER VERSION", window.location.pathname);
   return (
     <AuthProvider>
       <Cursor />
-      <BrowserRouter basename="/intern">
+      <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {['', '/intern'].map((base) => (
+            <Route key={base || 'root'} path={base || '/'}>
+              {/* Public Routes */}
+              <Route index element={<Navigate to={`${base}/login`} replace />} />
+              <Route path="login" element={<Login />} />
+              <Route path="admin/login" element={<AdminLogin />} />
+              <Route path="setup-password" element={<SetupPassword />} />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/setup-password" element={<SetupPassword />} />
+              {/* Protected Intern Routes */}
+              <Route element={<InternLayout />}>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="updates" element={<ProgressUpdates />} />
+                <Route path="documents" element={<Documents />} />
+                <Route path="certificate" element={<Certificates />} />
+                <Route path="announcements" element={<Announcements />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="settings" element={<Profile />} />
+              </Route>
 
-          {/* Protected Intern Routes */}
-          <Route element={<InternLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/updates" element={<ProgressUpdates />} />
-            <Route path="/documents" element={<Documents />} />
-            <Route path="/certificate" element={<Certificates />} />
-            <Route path="/announcements" element={<Announcements />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Profile />} />
-          </Route>
+              {/* Protected Admin Routes */}
+              <Route element={<AdminLayout />}>
+                <Route path="admin/dashboard" element={<AdminDashboard />} />
+                <Route path="admin/interns" element={<AdminInterns />} />
+                <Route path="admin/tasks" element={<Placeholder name="Admin Tasks" />} />
+                <Route path="admin/updates" element={<Placeholder name="Admin Updates" />} />
+                <Route path="admin/documents" element={<Placeholder name="Admin Documents" />} />
+                <Route path="admin/certificates" element={<Placeholder name="Admin Certificates" />} />
+                <Route path="admin/announcements" element={<Placeholder name="Admin Announcements" />} />
+                <Route path="admin/settings" element={<Placeholder name="Admin Settings" />} />
+              </Route>
 
-          {/* Protected Admin Routes */}
-          <Route element={<AdminLayout />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/interns" element={<AdminInterns />} />
-            <Route path="/admin/tasks" element={<Placeholder name="Admin Tasks" />} />
-            <Route path="/admin/updates" element={<Placeholder name="Admin Updates" />} />
-            <Route path="/admin/documents" element={<Placeholder name="Admin Documents" />} />
-            <Route path="/admin/certificates" element={<Placeholder name="Admin Certificates" />} />
-            <Route path="/admin/announcements" element={<Placeholder name="Admin Announcements" />} />
-            <Route path="/admin/settings" element={<Placeholder name="Admin Settings" />} />
-          </Route>
-
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to={`${base}/login`} replace />} />
+            </Route>
+          ))}
         </Routes>
       </BrowserRouter>
       <Toaster />

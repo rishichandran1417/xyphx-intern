@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useAppNavigate } from '@/hooks/useAppNavigate'
 import { XyphxCard, XyphxCardContent, XyphxCardHeader, XyphxCardTitle } from '@/components/xyphx/XyphxCard'
 import { XyphxBadge } from '@/components/xyphx/XyphxBadge'
 import { useAuth } from '../../contexts/AuthContext'
@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
-  const navigate = useNavigate()
+  const navigate = useAppNavigate()
   const [internDetails, setInternDetails] = useState<any>(null)
   const [tasks, setTasks] = useState<any[]>([])
   const [projects, setProjects] = useState<any[]>([])

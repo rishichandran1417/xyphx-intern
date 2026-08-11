@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useAppNavigate } from '@/hooks/useAppNavigate'
 import { supabase } from '@/lib/supabase'
 import { XyphxButton } from '@/components/xyphx/XyphxButton'
 import { XyphxInput } from '@/components/xyphx/XyphxInput'
@@ -11,7 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const navigate = useNavigate()
+  const navigate = useAppNavigate()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

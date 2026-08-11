@@ -1,0 +1,136 @@
+﻿commit 857d3e5eb284ba4f34d8c80b25088750492b8565
+Author: Rishi Chandran <rishichandran17@gmail.com>
+Date:   Tue Aug 11 16:28:12 2026 +0530
+
+    fix intern routing
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 693f0e4..4b65bd8 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -33,11 +33,11 @@ export default function App() {
+         <Routes>
+           {/* Public Routes */}
+           <Route path="/" element={<Navigate to="/login" replace />} />
+-          <Route path="/intern" element={<Navigate to="/login" replace />} />
++
+           <Route path="/login" element={<Login />} />
+           <Route path="/admin/login" element={<AdminLogin />} />
+           <Route path="/setup-password" element={<SetupPassword />} />
+-          
++
+           {/* Protected Intern Routes */}
+           <Route element={<InternLayout />}>
+             <Route path="/dashboard" element={<Dashboard />} />
+@@ -61,7 +61,7 @@ export default function App() {
+             <Route path="/admin/announcements" element={<Placeholder name="Admin Announcements" />} />
+             <Route path="/admin/settings" element={<Placeholder name="Admin Settings" />} />
+           </Route>
+-          
++
+           {/* Fallback */}
+           <Route path="*" element={<Navigate to="/login" replace />} />
+         </Routes>
+
+commit a529a6e36b9c3a11d8acf0c167f61dca121d5e1f
+Author: Rishi Chandran <rishichandran17@gmail.com>
+Date:   Tue Aug 11 16:10:19 2026 +0530
+
+    update intern portal
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 3377f04..693f0e4 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -33,6 +33,7 @@ export default function App() {
+         <Routes>
+           {/* Public Routes */}
+           <Route path="/" element={<Navigate to="/login" replace />} />
++          <Route path="/intern" element={<Navigate to="/login" replace />} />
+           <Route path="/login" element={<Login />} />
+           <Route path="/admin/login" element={<AdminLogin />} />
+           <Route path="/setup-password" element={<SetupPassword />} />
+
+commit 01baa338e0ba1479e3b0d4fa6d262dd5240b659b
+Author: Rishi Chandran <rishichandran17@gmail.com>
+Date:   Tue Aug 11 15:49:37 2026 +0530
+
+    first commit
+
+diff --git a/src/App.tsx b/src/App.tsx
+new file mode 100644
+index 0000000..3377f04
+--- /dev/null
++++ b/src/App.tsx
+@@ -0,0 +1,71 @@
++import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
++import { Toaster } from "@/components/ui/toaster"
++import { AuthProvider } from './contexts/AuthContext'
++
++import InternLayout from './layouts/InternLayout'
++import AdminLayout from './layouts/AdminLayout'
++import Login from './pages/Login'
++import AdminLogin from './pages/admin/Login'
++import Dashboard from './pages/intern/Dashboard'
++import Tasks from './pages/intern/Tasks'
++import AdminDashboard from './pages/admin/AdminDashboard'
++import AdminInterns from './pages/admin/Interns'
++import SetupPassword from './pages/intern/SetupPassword'
++import ProgressUpdates from './pages/intern/ProgressUpdates'
++import Documents from './pages/intern/Documents'
++import Certificates from './pages/intern/Certificates'
++import Announcements from './pages/intern/Announcements'
++import Profile from './pages/intern/Profile'
++import { Cursor } from './components/Cursor'
++
++// Placeholder for remaining pages
++const Placeholder = ({ name }: { name: string }) => (
++  <div className="flex items-center justify-center h-[50vh] w-full">
++    <h1 className="text-2xl font-bold text-slate-400">{name} - Coming Soon</h1>
++  </div>
++)
++
++export default function App() {
++  return (
++    <AuthProvider>
++      <Cursor />
++      <BrowserRouter basename="/intern">
++        <Routes>
++          {/* Public Routes */}
++          <Route path="/" element={<Navigate to="/login" replace />} />
++          <Route path="/login" element={<Login />} />
++          <Route path="/admin/login" element={<AdminLogin />} />
++          <Route path="/setup-password" element={<SetupPassword />} />
++          
++          {/* Protected Intern Routes */}
++          <Route element={<InternLayout />}>
++            <Route path="/dashboard" element={<Dashboard />} />
++            <Route path="/tasks" element={<Tasks />} />
++            <Route path="/updates" element={<ProgressUpdates />} />
++            <Route path="/documents" element={<Documents />} />
++            <Route path="/certificate" element={<Certificates />} />
++            <Route path="/announcements" element={<Announcements />} />
++            <Route path="/profile" element={<Profile />} />
++            <Route path="/settings" element={<Profile />} />
++          </Route>
++
++          {/* Protected Admin Routes */}
++          <Route element={<AdminLayout />}>
++            <Route path="/admin/dashboard" element={<AdminDashboard />} />
++            <Route path="/admin/interns" element={<AdminInterns />} />
++            <Route path="/admin/tasks" element={<Placeholder name="Admin Tasks" />} />
++            <Route path="/admin/updates" element={<Placeholder name="Admin Updates" />} />
++            <Route path="/admin/documents" element={<Placeholder name="Admin Documents" />} />
++            <Route path="/admin/certificates" element={<Placeholder name="Admin Certificates" />} />
++            <Route path="/admin/announcements" element={<Placeholder name="Admin Announcements" />} />
++            <Route path="/admin/settings" element={<Placeholder name="Admin Settings" />} />
++          </Route>
++          
++          {/* Fallback */}
++          <Route path="*" element={<Navigate to="/login" replace />} />
++        </Routes>
++      </BrowserRouter>
++      <Toaster />
++    </AuthProvider>
++  )
++}

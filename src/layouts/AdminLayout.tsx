@@ -1,4 +1,5 @@
-import { Navigate, Outlet, Link, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { AppLink as Link } from '@/components/AppLink'
 import { useAuth } from '../contexts/AuthContext'
 import { 
   LayoutDashboard, Users, CheckSquare, FileText, 
@@ -81,7 +82,7 @@ export default function AdminLayout() {
         <div className="h-16 border-b bg-white flex items-center justify-between px-8 md:hidden">
             <span className="font-semibold text-slate-900">Admin Portal</span>
         </div>
-        <div className="p-8">
+        <div className="flex-1 p-8 overflow-auto">
           <Outlet />
         </div>
       </main>

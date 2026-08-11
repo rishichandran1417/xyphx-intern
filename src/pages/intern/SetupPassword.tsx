@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useAppNavigate } from '@/hooks/useAppNavigate'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { XyphxButton } from '@/components/xyphx/XyphxButton'
@@ -12,7 +12,7 @@ export default function SetupPassword() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const navigate = useNavigate()
+  const navigate = useAppNavigate()
   const { user, profile } = useAuth()
 
   // Prevent accessing if no forced change needed

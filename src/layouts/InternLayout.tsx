@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Navigate, Outlet, Link, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { AppLink as Link } from '@/components/AppLink'
 import { useAuth } from '../contexts/AuthContext'
 import { Menu, X, User } from 'lucide-react'
 import { XyphxPageTransition } from '@/components/xyphx/XyphxPageTransition'

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useAppNavigate } from '@/hooks/useAppNavigate'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { XyphxCard, XyphxCardContent } from '@/components/xyphx/XyphxCard'
@@ -7,7 +7,7 @@ import { XyphxBadge } from '@/components/xyphx/XyphxBadge'
 
 export default function Tasks() {
   const { user } = useAuth()
-  const navigate = useNavigate()
+  const navigate = useAppNavigate()
   const [projects, setProjects] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
 
