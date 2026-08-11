@@ -33,11 +33,11 @@ export default function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/intern" element={<Navigate to="/login" replace />} />
+
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/setup-password" element={<SetupPassword />} />
-          
+
           {/* Protected Intern Routes */}
           <Route element={<InternLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -61,7 +61,7 @@ export default function App() {
             <Route path="/admin/announcements" element={<Placeholder name="Admin Announcements" />} />
             <Route path="/admin/settings" element={<Placeholder name="Admin Settings" />} />
           </Route>
-          
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
