@@ -147,10 +147,14 @@ export default function AdminInterns() {
     e.preventDefault()
     if (!selectedIntern) return
     
-    await supabase.from('intern_projects').insert([{
+    const { error } = await supabase.from('intern_projects').insert([{
       intern_id: selectedIntern.profile_id,
       ...newProject
     }])
+    if (error) {
+      alert("Failed to create project: " + error.message)
+      return
+    }
     setIsProjectModalOpen(false)
     setNewProject({ name: '', description: '', start_date: '', due_date: '' })
     loadInternProjects(selectedIntern.profile_id)
@@ -160,7 +164,7 @@ export default function AdminInterns() {
     e.preventDefault()
     if (!selectedIntern || !selectedProject) return
     
-    await supabase.from('intern_tasks').insert([{
+    const { error } = await supabase.from('intern_tasks').insert([{
       intern_id: selectedIntern.profile_id,
       project_id: selectedProject.id,
       title: newTask.title,
@@ -169,6 +173,10 @@ export default function AdminInterns() {
       status: 'todo',
       progress: 0
     }])
+    if (error) {
+      alert("Failed to create task: " + error.message)
+      return
+    }
     setIsTaskModalOpen(false)
     setNewTask({ title: '', description: '', due_date: '' })
     loadInternProjects(selectedIntern.profile_id)
