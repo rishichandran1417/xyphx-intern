@@ -56,6 +56,22 @@
     @apply bg-background text-foreground;
     cursor: none !important;
   }
+  
+  /* Global Watermark */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-image: url('https://xyphx.com/logo.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 60%;
+    opacity: 0.12;
+    filter: grayscale(100%);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
 }
 
 /* 
