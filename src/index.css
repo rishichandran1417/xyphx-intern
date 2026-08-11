@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+    
+    /* XyphX Intern Portal Tokens */
+    --xyphx-bg: #FFFFFF;
+    --xyphx-surface: #FFFFFF;
+    --xyphx-text: #171717;
+    --xyphx-muted: #626262;
+    --xyphx-border: rgba(20,20,20,0.10);
+    --xyphx-border-strong: rgba(20,20,20,0.16);
+    --xyphx-purple: #59008C;
+    --xyphx-purple-dark: #3f0063;
+    --xyphx-warm: #F2B84B;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    cursor: none !important;
+  }
+  body {
+    @apply bg-background text-foreground;
+    cursor: none !important;
+  }
+}
+
+/* 
+ * XYPHX INTERN PORTAL STYLES 
+ */
+.xyphx-canvas {
+  background-color: var(--xyphx-bg);
+  background-image: 
+    linear-gradient(rgba(90, 70, 150, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 70, 150, 0.045) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  color: var(--xyphx-text);
+  font-family: 'Inter', sans-serif;
+}
+
+.xyphx-heading {
+  font-family: 'Inter', sans-serif;
+  color: var(--xyphx-text);
+  letter-spacing: -0.05em;
+  font-weight: 600;
+}
+
+.xyphx-mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.xyphx-transition-enter {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.xyphx-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 400ms ease-out, transform 400ms ease-out;
+}
+
+.xyphx-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 600ms ease-out, transform 600ms ease-out;
+}
+.xyphx-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
