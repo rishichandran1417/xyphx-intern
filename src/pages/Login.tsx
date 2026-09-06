@@ -18,20 +18,53 @@ export default function Login() {
     setLoading(true)
     setError('')
     
-    // Proxy email strategy as requested
-    const proxyEmail = `${username.toLowerCase()}@interns.xyphx.com`
+    // Trim and normalize input
+    const cleanUsername = username.trim()
+    const isEmailInput = cleanUsername.includes('@')
+    
+    const primaryEmail = isEmailInput
+      ? cleanUsername.toLowerCase()
+      : `${cleanUsername.toLowerCase()}@interns.xyphx.com`
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: proxyEmail,
+    let { data, error } = await supabase.auth.signInWithPassword({
+      email: primaryEmail,
       password,
     })
 
-    if (error) {
-      setError("Invalid username or password.")
-      setLoading(false)
-    } else {
-      navigate('/dashboard')
+    // Fallback: If username only and primary domain failed, try @xyphx.com proxy domain
+    if (error && !isEmailInput) {
+      const fallbackEmail = `${cleanUsername.toLowerCase()}@xyphx.com`
+      const fallbackRes = await supabase.auth.signInWithPassword({
+        email: fallbackEmail,
+        password,
+      })
+      if (!fallbackRes.error) {
+        data = fallbackRes.data
+        error = null
+      }
     }
+
+    if (error || !data?.user) {
+      setError(error?.message || "Invalid username or password.")
+      setLoading(false)
+      return
+    }
+
+    // Verify role to prevent admin accounts from signing in via intern login
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single()
+
+    if (profileData?.role === 'admin') {
+      await supabase.auth.signOut()
+      setError("Admin accounts must use the Admin Login page.")
+      setLoading(false)
+      return
+    }
+
+    navigate('/dashboard')
   }
 
   return (

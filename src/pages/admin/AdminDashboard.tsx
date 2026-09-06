@@ -12,11 +12,19 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [{ count: totalInterns }, { count: activeInterns }, { count: certs }] = await Promise.all([
-        supabase.from('interns').select('*', { count: 'exact', head: true }),
-        supabase.from('interns').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('status', 'Issued'),
-      ])
+      let { count: totalInterns } = await supabase.from('intern_records').select('*', { count: 'exact', head: true })
+      let { count: activeInterns } = await supabase.from('intern_records').select('*', { count: 'exact', head: true })
+      
+      if (totalInterns === null) {
+        const fallbackTotal = await supabase.from('interns').select('*', { count: 'exact', head: true })
+        totalInterns = fallbackTotal.count
+      }
+      if (activeInterns === null) {
+        const fallbackActive = await supabase.from('interns').select('*', { count: 'exact', head: true })
+        activeInterns = fallbackActive.count
+      }
+
+      const { count: certs } = await supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('status', 'Issued')
       
       setStats({
         totalInterns: totalInterns || 0,

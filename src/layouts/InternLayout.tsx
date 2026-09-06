@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Menu, X, User } from 'lucide-react'
 import { XyphxPageTransition } from '@/components/xyphx/XyphxPageTransition'
 import { AnimatePresence } from 'framer-motion'
+import { resolvePath } from '@/utils/basePath'
 
 export default function InternLayout() {
   const { session, profile, loading, signOut } = useAuth()
@@ -14,17 +15,17 @@ export default function InternLayout() {
   if (loading) return <div className="flex h-screen items-center justify-center xyphx-canvas">Loading...</div>
   
   if (!session) {
-    return <Navigate to="/login" replace />
+    return <Navigate to={resolvePath('/login')} replace />
   }
 
   // Intercept forced password change
   if (profile?.force_password_change) {
-    return <Navigate to="/setup-password" replace />
+    return <Navigate to={resolvePath('/setup-password')} replace />
   }
 
   // If user is admin, they shouldn't be in the intern layout
   if (profile?.role === 'admin') {
-    return <Navigate to="/admin/dashboard" replace />
+    return <Navigate to={resolvePath('/admin/dashboard')} replace />
   }
 
   const navigation = [
@@ -32,7 +33,6 @@ export default function InternLayout() {
     { name: 'Tasks', href: '/tasks' },
     { name: 'Progress updates', href: '/updates' },
     { name: 'Documents', href: '/documents' },
-    { name: 'Certificates', href: '/certificate' },
   ]
 
   const closeMenu = () => setMobileMenuOpen(false)

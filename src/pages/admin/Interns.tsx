@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Plus, Search, ChevronLeft, CheckCircle2, Circle } from 'lucide-react'
+import { Plus, Search, ChevronLeft, CheckCircle2, Circle, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -53,14 +53,94 @@ export default function AdminInterns() {
     start_date: '',
     end_date: ''
   })
+
+  // Edit Intern State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingIntern, setEditingIntern] = useState<any | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    first_name: '',
+    last_name: '',
+    department: '',
+    role_title: '',
+    mentor: '',
+    start_date: '',
+    end_date: ''
+  })
   const { session } = useAuth()
 
   useEffect(() => {
     fetchInterns()
   }, [])
 
+  const getInternId = (intern: any) => intern?.profile_id || intern?.id || intern?.profiles?.id
+
+  const openEditModal = (intern: any) => {
+    setEditingIntern(intern)
+    setEditFormData({
+      first_name: intern.profiles?.first_name || '',
+      last_name: intern.profiles?.last_name || '',
+      department: intern.department || '',
+      role_title: intern.role_title || '',
+      mentor: intern.mentor || '',
+      start_date: intern.start_date || '',
+      end_date: intern.end_date || ''
+    })
+    setIsEditModalOpen(true)
+  }
+
+  const handleUpdateIntern = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingIntern) return
+    const targetId = getInternId(editingIntern)
+    if (!targetId) {
+      alert("Error: Could not identify intern account ID.")
+      return
+    }
+    setLoading(true)
+
+    try {
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({
+          first_name: editFormData.first_name,
+          last_name: editFormData.last_name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', targetId)
+
+      if (profileErr) throw profileErr
+
+      const payload = [{
+        profile_id: targetId,
+        department: editFormData.department,
+        role_title: editFormData.role_title,
+        mentor: editFormData.mentor || null,
+        start_date: editFormData.start_date,
+        end_date: editFormData.end_date,
+        status: editingIntern.status || 'active'
+      }]
+
+      const { error: recErr } = await supabase
+        .from('intern_records')
+        .upsert(payload)
+
+      if (recErr) {
+        const { error: internErr } = await supabase.from('interns').upsert(payload)
+        if (internErr) throw internErr
+      }
+
+      setIsEditModalOpen(false)
+      setEditingIntern(null)
+      fetchInterns()
+    } catch (err: any) {
+      alert("Failed to update intern details: " + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const fetchInterns = async () => {
-    const { data } = await supabase.from('interns')
+    let { data: internRows } = await supabase.from('intern_records')
       .select(`
         *,
         profiles (
@@ -69,7 +149,48 @@ export default function AdminInterns() {
           username
         )
       `)
-    setInterns(data || [])
+
+    if (!internRows) {
+      const fallback = await supabase.from('interns')
+        .select(`
+          *,
+          profiles (
+            first_name,
+            last_name,
+            username
+          )
+        `)
+      internRows = fallback.data
+    }
+
+    const { data: allProfiles } = await supabase.from('profiles')
+      .select('*')
+      .eq('role', 'intern')
+
+    if (allProfiles && allProfiles.length > 0) {
+      const existingProfileIds = new Set((internRows || []).map(i => getInternId(i)))
+      const missingProfiles = allProfiles.filter(p => !existingProfileIds.has(p.id))
+      
+      const syntheticInterns = missingProfiles.map(p => ({
+        profile_id: p.id,
+        department: '--',
+        role_title: '--',
+        mentor: '',
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: '',
+        status: 'active',
+        profiles: {
+          first_name: p.first_name,
+          last_name: p.last_name,
+          username: p.username
+        }
+      }))
+      
+      setInterns([...(internRows || []), ...syntheticInterns])
+      return
+    }
+
+    setInterns(internRows || [])
   }
 
   const loadInternProjects = async (internId: string) => {
@@ -145,10 +266,11 @@ export default function AdminInterns() {
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedIntern) return
+    const targetId = getInternId(selectedIntern)
+    if (!targetId) return
     
     const { error } = await supabase.from('intern_projects').insert([{
-      intern_id: selectedIntern.profile_id,
+      intern_id: targetId,
       ...newProject
     }])
     if (error) {
@@ -157,19 +279,21 @@ export default function AdminInterns() {
     }
     setIsProjectModalOpen(false)
     setNewProject({ name: '', description: '', start_date: '', due_date: '' })
-    loadInternProjects(selectedIntern.profile_id)
+    loadInternProjects(targetId)
   }
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedIntern || !selectedProject) return
+    const targetId = getInternId(selectedIntern)
+    if (!targetId || !selectedProject) return
     
     const { error } = await supabase.from('intern_tasks').insert([{
-      intern_id: selectedIntern.profile_id,
+      intern_id: targetId,
       project_id: selectedProject.id,
       title: newTask.title,
       description: newTask.description,
       due_date: newTask.due_date || null,
+      deadline: newTask.due_date || null,
       status: 'todo',
       progress: 0
     }])
@@ -179,6 +303,45 @@ export default function AdminInterns() {
     }
     setIsTaskModalOpen(false)
     setNewTask({ title: '', description: '', due_date: '' })
+    loadInternProjects(targetId)
+  }
+
+  const handleToggleTaskStatus = async (task: any) => {
+    const newStatus = task.status === 'completed' ? 'todo' : 'completed'
+    const newProgress = newStatus === 'completed' ? 100 : 0
+    
+    const { error } = await supabase.from('intern_tasks').update({
+      status: newStatus,
+      progress: newProgress,
+      updated_at: new Date().toISOString()
+    }).eq('id', task.id)
+
+    if (error) {
+      alert("Failed to update task status: " + error.message)
+      return
+    }
+
+    setTasks(tasks.map(t => t.id === task.id ? { ...t, status: newStatus, progress: newProgress } : t))
+  }
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm("Are you sure you want to delete this task?")) return
+    const { error } = await supabase.from('intern_tasks').delete().eq('id', taskId)
+    if (error) {
+      alert("Failed to delete task: " + error.message)
+      return
+    }
+    setTasks(tasks.filter(t => t.id !== taskId))
+  }
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm("Are you sure you want to delete this project and all its tasks?")) return
+    const { error } = await supabase.from('intern_projects').delete().eq('id', projectId)
+    if (error) {
+      alert("Failed to delete project: " + error.message)
+      return
+    }
+    if (selectedProject?.id === projectId) setSelectedProject(null)
     loadInternProjects(selectedIntern.profile_id)
   }
 
@@ -247,14 +410,25 @@ export default function AdminInterns() {
                 return (
                   <Card 
                     key={project.id} 
-                    className={`p-4 cursor-pointer transition-colors ${isSelected ? 'border-slate-900 ring-1 ring-slate-900' : 'hover:border-slate-400'}`}
+                    className={`p-4 cursor-pointer transition-colors relative group ${isSelected ? 'border-slate-900 ring-1 ring-slate-900' : 'hover:border-slate-400'}`}
                     onClick={() => setSelectedProject(project)}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold truncate pr-2">{project.name}</h3>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 uppercase">
-                        {completedTasks === projectTasks.length && projectTasks.length > 0 ? 'Completed' : project.status}
-                      </span>
+                      <h3 className="font-semibold truncate pr-6">{project.name}</h3>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 uppercase">
+                          {completedTasks === projectTasks.length && projectTasks.length > 0 ? 'Completed' : project.status}
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }}
+                          title="Delete Project"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="text-sm text-slate-500 mb-3">
                       {completedTasks} / {projectTasks.length} tasks
@@ -316,18 +490,47 @@ export default function AdminInterns() {
                     <div className="text-center py-8 text-slate-500">No tasks in this project yet.</div>
                   ) : (
                     tasks.filter(t => t.project_id === selectedProject.id).map(task => (
-                      <div key={task.id} className="flex items-start gap-3 p-4 rounded-lg border bg-white shadow-sm">
-                        {task.status === 'completed' ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-slate-300 mt-0.5" />
-                        )}
-                        <div>
-                          <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-slate-500' : ''}`}>
-                            {task.title}
-                          </h4>
-                          {task.description && <p className="text-sm text-slate-500 mt-1">{task.description}</p>}
-                          {task.due_date && <p className="text-xs text-slate-400 mt-2 font-mono">Due: {new Date(task.due_date).toLocaleDateString()}</p>}
+                      <div key={task.id} className="flex items-center justify-between p-4 rounded-lg border bg-white shadow-sm hover:border-slate-300">
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleTaskStatus(task)}
+                            className="mt-0.5 focus:outline-none"
+                            title={task.status === 'completed' ? "Mark incomplete" : "Mark completed"}
+                          >
+                            {task.status === 'completed' ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-500 hover:text-green-600 transition-colors" />
+                            ) : (
+                              <Circle className="h-5 w-5 text-slate-300 hover:text-slate-500 transition-colors" />
+                            )}
+                          </button>
+                          <div>
+                            <h4 className={`font-medium ${task.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                              {task.title}
+                            </h4>
+                            {task.description && <p className="text-sm text-slate-500 mt-1">{task.description}</p>}
+                            {(task.due_date || task.deadline) && (
+                              <p className="text-xs text-slate-400 mt-2 font-mono">
+                                Due: {new Date(task.due_date || task.deadline).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                            task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {task.status === 'completed' ? 'Completed' : 'Pending'}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-red-600"
+                            onClick={() => handleDeleteTask(task.id)}
+                            title="Delete Task"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))
@@ -469,42 +672,140 @@ export default function AdminInterns() {
                 </TableCell>
               </TableRow>
             ) : (
-              interns.map((intern) => (
-                <TableRow key={intern.profile_id}>
-                  <TableCell className="font-medium">
-                    {intern.profiles?.first_name} {intern.profiles?.last_name}
-                    <div className="text-xs text-slate-500 font-normal">{intern.profiles?.username}</div>
-                  </TableCell>
-                  <TableCell>{intern.role_title}</TableCell>
-                  <TableCell>{intern.department}</TableCell>
-                  <TableCell>{new Date(intern.start_date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      intern.status === 'active' ? 'bg-green-100 text-green-700' : 
-                      intern.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                      intern.status === 'suspended' ? 'bg-red-100 text-red-700' :
-                      'bg-slate-100 text-slate-700'}`}>
-                      {intern.status.charAt(0).toUpperCase() + intern.status.slice(1)}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => {
-                      setSelectedIntern(intern)
-                      loadInternProjects(intern.profile_id)
-                    }}>
-                      Manage
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleResetPassword(intern.profile_id)}>
-                      Reset Pass
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              interns.map((intern) => {
+                const targetId = getInternId(intern)
+                return (
+                  <TableRow key={targetId}>
+                    <TableCell className="font-medium">
+                      {intern.profiles?.first_name} {intern.profiles?.last_name}
+                      <div className="text-xs text-slate-500 font-normal">{intern.profiles?.username}</div>
+                    </TableCell>
+                    <TableCell>{intern.role_title}</TableCell>
+                    <TableCell>{intern.department}</TableCell>
+                    <TableCell>{intern.start_date ? new Date(intern.start_date).toLocaleDateString() : '--'}</TableCell>
+                    <TableCell>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        intern.status === 'active' ? 'bg-green-100 text-green-700' : 
+                        intern.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                        intern.status === 'suspended' ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-700'}`}>
+                        {(intern.status || 'active').charAt(0).toUpperCase() + (intern.status || 'active').slice(1)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEditModal(intern)}>
+                        Edit
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setSelectedIntern(intern)
+                        loadInternProjects(targetId)
+                      }}>
+                        Manage
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleResetPassword(targetId)}>
+                        Reset Pass
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
       </Card>
 
+      {/* Edit Intern Dialog */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Intern</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateIntern} className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_first_name">First Name</Label>
+                <Input 
+                  id="edit_first_name" 
+                  required 
+                  value={editFormData.first_name} 
+                  onChange={e => setEditFormData({...editFormData, first_name: e.target.value})} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_last_name">Last Name</Label>
+                <Input 
+                  id="edit_last_name" 
+                  required 
+                  value={editFormData.last_name} 
+                  onChange={e => setEditFormData({...editFormData, last_name: e.target.value})} 
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_department">Department</Label>
+                <Input 
+                  id="edit_department" 
+                  required 
+                  value={editFormData.department} 
+                  onChange={e => setEditFormData({...editFormData, department: e.target.value})} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_role_title">Role Title</Label>
+                <Input 
+                  id="edit_role_title" 
+                  required 
+                  value={editFormData.role_title} 
+                  onChange={e => setEditFormData({...editFormData, role_title: e.target.value})} 
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit_mentor">Mentor Name (Optional)</Label>
+              <Input 
+                id="edit_mentor" 
+                value={editFormData.mentor} 
+                onChange={e => setEditFormData({...editFormData, mentor: e.target.value})} 
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_start_date">Start Date</Label>
+                <Input 
+                  id="edit_start_date" 
+                  type="date" 
+                  required 
+                  value={editFormData.start_date} 
+                  onChange={e => setEditFormData({...editFormData, start_date: e.target.value})} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_end_date">End Date</Label>
+                <Input 
+                  id="edit_end_date" 
+                  type="date" 
+                  required 
+                  value={editFormData.end_date} 
+                  onChange={e => setEditFormData({...editFormData, end_date: e.target.value})} 
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

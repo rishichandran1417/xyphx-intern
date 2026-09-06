@@ -18,13 +18,15 @@ export default function AdminLogin() {
     setLoading(true)
     setError('')
     
+    const cleanEmail = email.trim().toLowerCase()
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password,
     })
 
     if (error) {
-      setError("Invalid admin credentials.")
+      setError(error.message || "Invalid admin credentials.")
       setLoading(false)
       return
     }

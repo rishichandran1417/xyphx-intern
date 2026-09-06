@@ -46,16 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const fetchProfile = async (userId: string) => {
-    // Try intern_profiles first (canonical profile table for interns)
-    let { data, error } = await supabase.from('intern_profiles').select('*').eq('id', userId).single()
-    
-    // If not found or error (e.g. for admins), fallback to standard profiles
-    if (error || !data) {
-      const fallback = await supabase.from('profiles').select('*').eq('id', userId).single()
-      data = fallback.data
-    }
-    
-    setProfile(data)
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    if (error) console.error("AuthContext profile fetch error:", error)
+    setProfile(data || null)
     setLoading(false)
   }
 

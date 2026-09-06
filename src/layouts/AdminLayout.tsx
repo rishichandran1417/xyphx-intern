@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Users, CheckSquare, FileText, 
   FileBadge, Settings, LogOut 
 } from 'lucide-react'
+import { resolvePath } from '@/utils/basePath'
 
 export default function AdminLayout() {
   const { session, profile, loading, signOut } = useAuth()
@@ -13,7 +14,7 @@ export default function AdminLayout() {
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-900 text-white">Loading...</div>
   
   if (!session || profile?.role !== 'admin') {
-    return <Navigate to="/admin/login" replace />
+    return <Navigate to={resolvePath('/admin/login')} replace />
   }
 
   const navigation = [
